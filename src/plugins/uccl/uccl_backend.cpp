@@ -726,7 +726,14 @@ nixlUcclEngine::checkXfer(nixlBackendReqH *handle) const {
         return NIXL_ERR_BACKEND;
     }
 
-    bool is_done = uccl_engine_xfer_status(conn, uccl_handle->transfer_id);
+    // 1 = done, 0 = in progress, -1 = completed with a transport error.
+    int xfer_rc = uccl_engine_xfer_status(conn, uccl_handle->transfer_id);
+    if (xfer_rc < 0) {
+        NIXL_ERROR << "UCCL transfer failed with a transport error; notif: "
+                   << uccl_handle->notif_msg;
+        return NIXL_ERR_BACKEND;
+    }
+    bool is_done = (xfer_rc > 0);
     if (is_done) {
         nixlSerDes ser_des;
         ser_des.addStr("msg", uccl_handle->notif_msg);
